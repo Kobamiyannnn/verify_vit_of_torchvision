@@ -65,9 +65,11 @@ scheduler = CosineLRScheduler(
 criterion = nn.CrossEntropyLoss(label_smoothing=label_smoothing_epsilon)  # Label Smoothingありの損失関数
 
 
-def confirm_scheduler(epochs, scheduler):
+def confirm_scheduler(epochs, scheduler: CosineLRScheduler):
     lrs = []
     for i in range(epochs):
+        if i == 0:
+            print(f"warmup_lr_init: {scheduler._get_lr(i)}")
         lrs.append(scheduler._get_lr(i))
         if i == 30:
             print(f"finish warmup: {scheduler._get_lr(i)}")

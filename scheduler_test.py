@@ -13,6 +13,8 @@ def scheduler():
 
     lrs = []
     for i in range(200):
+        if i == 0:
+            print(scheduler._get_lr(i))
         # lrs.append(scheduler.get_epoch_values(i))
         lrs.append(scheduler._get_lr(i))
         if i == 199:
