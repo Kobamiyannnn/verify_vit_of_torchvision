@@ -143,12 +143,8 @@ if __name__ == "__main__":
     nn.init.constant_(pretrained_model.heads[0].weight, 0)  # Zero-initialize
     nn.init.constant_(pretrained_model.heads[0].bias, 0) # Zero-initialize
 
-    # モデル構造の確認
-    summary(model=pretrained_model, input_size=(128, 3, 224, 224))
-    print()
-
     epochs = 300
-    batch_size = 256
+    batch_size = 128
 
     learning_rate = 0.001
     weight_decay = 0
@@ -158,8 +154,9 @@ if __name__ == "__main__":
 
     label_smoothing_epsilon = 0.11
 
-    # 入力画像の前処理情報、preprocess(img)でいい
-    preprocess = vit.ViT_B_16_Weights.IMAGENET1K_V1.transforms()
+    # モデル構造の確認
+    summary(model=pretrained_model, input_size=(batch_size, 3, 224, 224))
+    print()
 
     optimizer = torch.optim.SGD(
         params=pretrained_model.parameters(), 
@@ -176,15 +173,17 @@ if __name__ == "__main__":
     )
 
     criterion = nn.CrossEntropyLoss(label_smoothing=label_smoothing_epsilon)  # Label Smoothingありの損失関数
-    confirm_scheduler(scheduler, show_fig=True)
+    confirm_scheduler(scheduler, show_fig=False)
 
 
     #----------------------------------#
     #          データセットの用意         #
     #----------------------------------#
-    train_data = datasets.CIFAR10(root="./data", train=True, download=True, transform=transforms.ToTensor())
-    test_data  = datasets.CIFAR10(root="./data", train=False, download=True, transform=transforms.ToTensor())
+    # 入力画像の前処理情報、preprocess(img)でいい
+    preprocess = vit.ViT_B_16_Weights.IMAGENET1K_V1.transforms()
 
+    train_data = datasets.CIFAR10(root="./data", train=True, download=True, transform=preprocess)
+    test_data  = datasets.CIFAR10(root="./data", train=False, download=True, transform=preprocess)
     # データセットの分割
     # train:val:test = 8:1:1
     num_val  = int(len(test_data) * 0.5)
