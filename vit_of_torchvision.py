@@ -5,7 +5,7 @@ import torchvision.models.vision_transformer as vit
 from torchvision.models.vision_transformer import ViT_B_16_Weights
 from timm.scheduler import CosineLRScheduler
 import matplotlib.pyplot as plt
-
+from torchsummary import summary
 
 device = (
     "cuda"
@@ -16,7 +16,7 @@ device = (
 )
 print(f"Using {device} device\n")
 
-model = vit.vit_b_16()  # /Users/[user_name]/.cache/torch/hub/checkpoints/ に保存される
+model = vit.vit_b_16().to(device)  # /Users/[user_name]/.cache/torch/hub/checkpoints/ に保存される
 
 pretrained_model = vit.vit_b_16(weights=ViT_B_16_Weights.IMAGENET1K_V1)
 """
@@ -33,6 +33,7 @@ torchrun --nproc_per_node=8 train.py\
 
 # 入力画像の前処理情報、preprocess(img)でいい
 preprocess = ViT_B_16_Weights.IMAGENET1K_V1.transforms()
+print(preprocess)
 
 epochs = 300
 batch_size = 512
