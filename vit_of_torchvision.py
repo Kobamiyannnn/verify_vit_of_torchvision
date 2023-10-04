@@ -114,6 +114,36 @@ def confirm_scheduler(scheduler: CosineLRScheduler, show_fig: bool = True) -> No
     plt.show()
 
 
+def train(model, criterion, optimizer, dataloader: DataLoader) -> Tuple[float, float]:
+    """
+    学習用関数。1エポック間の学習について記述する。
+    """
+
+
+def validation(model, criterion, dataloader: DataLoader) -> Tuple[float, float]:
+    """
+    検証用関数。`train()`後に配置する
+    """
+
+
+def test(model, criterion, dataloader: DataLoader) -> Tuple[float, float]:
+    """
+    テスト用関数。全エポック終了後に配置する。`validation()`を流用
+    """
+
+
+def save_lc_of_loss(train_loss_list: list, val_loss_list: list, date_now: str) -> None:
+    """
+    損失の学習曲線を保存する。学習時と検証時とを同時に描画する。
+    """
+
+
+def save_lc_of_acc(train_loss_list: list, val_loss_list: list, date_now: str) -> None:
+    """
+    精度の学習曲線を保存する。学習時と検証時とを同時に描画する。
+    """
+
+
 if __name__ == "__main__":
     #-------------------------#
     #          諸準備          #
@@ -212,3 +242,23 @@ if __name__ == "__main__":
         9: "truck"
     }
     show_dataset_sample(train_data, classes, show_fig=False)
+
+
+    #######################################
+    #          ファインチューニング          #
+    #######################################
+    print("\033[44mTraining Step\033[0m")
+
+    for t in range(epochs):
+        print(f"Epoch {t+1}\n----------------------------------------------------------------")
+
+        print("\033[34mTrain\033[0m")
+
+        print("\033[34mValidation\033[0m")
+
+    print("\033[44mTest Step\033[0m")
+
+    
+    ################################
+    #          成果物の保存          #
+    ################################
