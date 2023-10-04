@@ -104,12 +104,12 @@ def confirm_scheduler(scheduler: CosineLRScheduler, show_fig: bool = True) -> No
     lrs = []
     for i in range(scheduler.t_initial):
         if i == 0:
-            print(f"warmup_lr_init: {scheduler._get_lr(i)}")
+            print(f"warmup_lr_init: {scheduler._get_lr(i)[0]}")
         lrs.append(scheduler._get_lr(i))
         if i == 30:
-            print(f"finish warmup: {scheduler._get_lr(i)}")
+            print(f"finish warmup : {scheduler._get_lr(i)[0]}")
         elif i == scheduler.t_initial - 1:
-            print(scheduler._get_lr(i))
+            print(f"final lr      : {scheduler._get_lr(i)[0]}\n")
     plt.plot(lrs)
     plt.show()
 
@@ -126,9 +126,6 @@ if __name__ == "__main__":
     #          モデルの定義          #
     #------------------------------#
     # /Users/[user_name]/.cache/torch/hub/checkpoints/ に保存される
-    model = vit.vit_b_16().to(device)
-    pretrained_model = vit.vit_b_16(weights=vit.ViT_B_16_Weights.IMAGENET1K_V1).to(device)
-    summary(model=model, input_size=(256, 3, 224, 224))
     """
     # vit_b_16のrecipe
     [Link](https://github.com/pytorch/vision/tree/main/references/classification#vit_b_16)
@@ -139,38 +136,47 @@ if __name__ == "__main__":
         --lr-warmup-decay 0.033 --amp --label-smoothing 0.11 --mixup-alpha 0.2 --auto-augment ra\
         --clip-grad-norm 1 --ra-sampler --cutmix-alpha 1.0 --model-ema
     """
-    epochs = 300
-    batch_size = 512
+    pretrained_model = vit.vit_b_16(weights=vit.ViT_B_16_Weights.IMAGENET1K_V1).to(device)
 
-    learning_rate = 0.003
-    weight_decay = 0.3
-    lr_warmup_epochs = 30
-    lr_warmup_decay = 0.033
+    # 最終層の取り換え
+    pretrained_model.heads[0] = nn.Linear(in_features=768, out_features=10, bias=True)
+    nn.init.constant_(pretrained_model.heads[0].weight, 0)  # Zero-initialize
+    nn.init.constant_(pretrained_model.heads[0].bias, 0) # Zero-initialize
+
+    # モデル構造の確認
+    summary(model=pretrained_model, input_size=(128, 3, 224, 224))
+    print()
+
+    epochs = 300
+    batch_size = 256
+
+    learning_rate = 0.001
+    weight_decay = 0
+
+    lr_warmup_epochs = 5
+    lr_warmup_init   = 0.
 
     label_smoothing_epsilon = 0.11
-
-    dropout = 0.1
-
-    mixup_alpha = 0.2
-    auto_augment = "ra"  # RandAugment: Practical automated data augmentation with a reduced search space
 
     # 入力画像の前処理情報、preprocess(img)でいい
     preprocess = vit.ViT_B_16_Weights.IMAGENET1K_V1.transforms()
 
-    optimizer = torch.optim.Adam(
+    optimizer = torch.optim.SGD(
         params=pretrained_model.parameters(), 
         lr=learning_rate, 
-        weight_decay=weight_decay
+        weight_decay=weight_decay,
+        momentum=0.9
     )
     scheduler = CosineLRScheduler(
         optimizer,
         t_initial=epochs,  # The initial number of epochs.
         warmup_t=lr_warmup_epochs,  # The number of warmup epochs.
+        warmup_lr_init=lr_warmup_init, 
         warmup_prefix=True, # If set to `True`, then every new epoch number equals `epoch = epoch - warmup_t`.
     )
 
     criterion = nn.CrossEntropyLoss(label_smoothing=label_smoothing_epsilon)  # Label Smoothingありの損失関数
-    confirm_scheduler(scheduler, show_fig=False)
+    confirm_scheduler(scheduler, show_fig=True)
 
 
     #----------------------------------#
