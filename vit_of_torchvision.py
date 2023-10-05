@@ -12,6 +12,8 @@ import time
 from datetime import datetime
 import os
 import platform
+import pandas as pd
+import csv
 
 
 def set_device() -> str:
@@ -261,6 +263,48 @@ def save_lc_of_acc(train_acc_list: list, val_acc_list: list, dir_path: str) -> N
     plt.savefig(f"{dir_path}/LC_acc_{dir_path.replace('./results/', '')}.png")
 
 
+def save_stats_2_csv(
+        train_acc_list: list,
+        val_acc_list: list, 
+        train_loss_list: list, 
+        val_loss_list: list,
+        test_acc: float, 
+        test_loss: float, 
+        dir_path: str
+    ) -> None:
+    """
+    各エポックのAccuracy、Loss、また、テストでのAccuracy、Lossを保存する。
+    """
+    index = ["epoch_" + str(i + 1) for i in range(len(train_acc_list))]
+
+    df_acc_in_learn = pd.DataFrame(
+        {
+            "train_acc": train_acc_list,
+            "val_acc": val_acc_list
+        },
+        index=index
+    )
+    df_loss_in_learn = pd.DataFrame(
+        {
+            "train_loss": train_loss_list,
+            "val_loss": val_loss_list
+        },
+        index=index
+    )
+    df_stats_in_test = pd.DataFrame(
+        {
+            "accuracy": [test_acc],
+            "loss": [test_loss]
+        },
+        index=["test"]
+    )
+
+    # CSVとして書き出し
+    df_acc_in_learn.to_csv(f"{dir_path}/acc_in_learn_{dir_path.replace('./results/', '')}.csv", index=False, encoding="utf-8", quoting=csv.QUOTE_ALL)
+    df_loss_in_learn.to_csv(f"{dir_path}/loss_in_learn_{dir_path.replace('./results/', '')}.csv", index=False, encoding="utf-8", quoting=csv.QUOTE_ALL)
+    df_stats_in_test.to_csv(f"{dir_path}/stats_in_test_{dir_path.replace('./results/', '')}.csv", index=False, encoding="utf-8", quoting=csv.QUOTE_ALL)
+
+
 if __name__ == "__main__":
     #-------------------------#
     #          諸準備          #
@@ -404,3 +448,7 @@ if __name__ == "__main__":
     ################################
     # 学習結果保存用のディレクトリを作成
     dir_path = make_dir_4_deliverables()  # ./results/[something]
+    # 学習曲線の保存
+    save_lc_of_acc(train_acc_list, val_acc_list, dir_path)
+    save_lc_of_loss(train_loss_list, val_loss_list, dir_path)
+    save_stats_2_csv(train_acc_list, val_acc_list, train_loss_list, val_loss_list, test_acc, test_loss, dir_path)
