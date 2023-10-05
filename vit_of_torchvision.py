@@ -420,14 +420,14 @@ if __name__ == "__main__":
     for t in range(epochs):
         time_start = time.perf_counter()  # エポック内の処理時間の計測
 
-        print(f"Epoch {t+1}\n----------------------------------------------------------------")
+        print(f"Epoch {t+1}\n----------------------------------------------------------------", flush=True)
 
-        print("\033[34mTrain\033[0m")
+        print("\033[34mTrain\033[0m", flush=True)
         train_acc, train_loss = train(pretrained_model, criterion, optimizer, train_dataloader, device)
         train_acc_list.append(train_acc)
         train_loss_list.append(train_loss)
 
-        print("\033[34mValidation\033[0m")
+        print("\033[34mValidation\033[0m", flush=True)
         val_acc, val_loss = validation(pretrained_model, criterion, val_dataloader, device)
         print(f"    Avg val loss: {val_loss:>5.4f}, Avg val acc: {val_acc:>5.4f}")
         val_acc_list.append(val_acc)
@@ -436,11 +436,11 @@ if __name__ == "__main__":
         time_end = time.perf_counter()
         elapsed_per_epoch = time_end - time_start
 
-        print(f"\033[34mStats of Train in Epoch {t+1}\033[0m\n  Avg loss: {train_loss:>5.4f}, Avg acc: {train_acc:>5.4f} (Duration: {elapsed_per_epoch:.2f}s)\n")
+        print(f"\033[34mStats of Train in Epoch {t+1}\033[0m\n  Avg loss: {train_loss:>5.4f}, Avg acc: {train_acc:>5.4f} (Duration: {elapsed_per_epoch:.2f}s)\n", flush=True)
 
-    print("\033[44mTest Step\033[0m")
+    print("\033[44mTest Step\033[0m", flush=True)
     test_acc, test_loss = test(pretrained_model, criterion, test_dataloader, device)
-    print(f"    Avg test loss: {test_loss:>5.4f}, Avg test acc: {test_acc:>5.4f}")
+    print(f"    Avg test loss: {test_loss:>5.4f}, Avg test acc: {test_acc:>5.4f}", flush=True)
 
     
     ################################
