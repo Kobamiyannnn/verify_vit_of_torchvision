@@ -126,7 +126,6 @@ def train(model, criterion, optimizer, dataloader: DataLoader, device: str = "cu
 
     num_train_data = len(dataloader.dataset)  # 学習データの総数
     iterations     = dataloader.__len__()  # イテレーション数
-    batch_size     = len(X)  # バッチサイズ
 
     total_correct = 0 # エポックにおける、各イテレーションの正解数の合計
     total_loss    = 0 # エポックにおける、各イテレーションの損失の合計
@@ -149,6 +148,7 @@ def train(model, criterion, optimizer, dataloader: DataLoader, device: str = "cu
 
         # 学習状況の表示
         if (iteration % batch_size == 0) or (iteration+1 == iterations):
+            batch_size = len(X)  # バッチサイズ
             acc_in_this_iteration = num_correct / batch_size
             print(f"    [{iteration+1:3d}/{iterations:3d} iterations] Loss: {loss.item():>5.4f} - Accuracy: {acc_in_this_iteration:>5.4f}")
     
@@ -334,7 +334,7 @@ if __name__ == "__main__":
     nn.init.constant_(pretrained_model.heads[0].weight, 0)  # Zero-initialize
     nn.init.constant_(pretrained_model.heads[0].bias, 0) # Zero-initialize
 
-    epochs = 300
+    epochs = 10  # default: 300
     batch_size = 128
 
     learning_rate = 0.001
