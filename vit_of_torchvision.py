@@ -132,6 +132,7 @@ def train(model, criterion, optimizer, dataloader: DataLoader, device: str = "cu
 
     for iteration, (X, y) in enumerate(dataloader):
         X, y = X.to(device), y.to(device)
+        batch_size = len(X)  # バッチサイズ
 
         pred = model(X)
         loss = criterion(pred, y)
@@ -148,7 +149,6 @@ def train(model, criterion, optimizer, dataloader: DataLoader, device: str = "cu
 
         # 学習状況の表示
         if (iteration % batch_size == 0) or (iteration+1 == iterations):
-            batch_size = len(X)  # バッチサイズ
             acc_in_this_iteration = num_correct / batch_size
             print(f"    [{iteration+1:3d}/{iterations:3d} iterations] Loss: {loss.item():>5.4f} - Accuracy: {acc_in_this_iteration:>5.4f}")
     
@@ -335,7 +335,7 @@ if __name__ == "__main__":
     nn.init.constant_(pretrained_model.heads[0].bias, 0) # Zero-initialize
 
     epochs = 10  # default: 300
-    batch_size = 128
+    batch_size = 16  # NOTE: GTX 1650だとバッチサイズ16じゃないと載らない...
 
     learning_rate = 0.001
     weight_decay = 0
