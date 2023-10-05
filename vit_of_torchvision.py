@@ -4,9 +4,14 @@ from torch.utils.data import random_split, DataLoader
 from torchvision import datasets
 import torchvision.models.vision_transformer as vit
 from timm.scheduler import CosineLRScheduler
-import matplotlib.pyplot as plt
 from torchinfo import summary
+import matplotlib.pyplot as plt
+import numpy as np
 from typing import Tuple, Never
+import time
+from datetime import datetime
+import os
+import platform
 
 
 def set_device() -> str:
@@ -23,7 +28,7 @@ def set_device() -> str:
     return device
 
 
-def fix_seed(device: str, seed: int = 0):
+def fix_seed(device: str, seed: int = 0) -> None:
     """
     各種乱数シードの固定
     """
@@ -111,7 +116,7 @@ def confirm_scheduler(scheduler: CosineLRScheduler, show_fig: bool = True) -> No
     plt.show()
 
 
-def train(model, criterion, optimizer, dataloader: DataLoader, device: str) -> Tuple[float, float]:
+def train(model, criterion, optimizer, dataloader: DataLoader, device: str = "cuda") -> Tuple[float, float]:
     """
     学習用関数。1エポック間の学習について記述する。
     """
@@ -147,32 +152,113 @@ def train(model, criterion, optimizer, dataloader: DataLoader, device: str) -> T
     
 
     avg_acc  = total_correct / num_train_data  # 本エポックにおけるAccuracy
-    avg_loss = total_loss / iterations
+    avg_loss = total_loss / iterations  # 本エポックにおける損失
     return avg_acc, avg_loss 
 
 
-def validation(model, criterion, dataloader: DataLoader) -> Tuple[float, float]:
+def validation(model, criterion, dataloader: DataLoader, device: str = "cuda") -> Tuple[float, float]:
     """
     検証用関数。`train()`後に配置する
     """
+    model.eval()  # 検証モードに移行
 
+    num_val_data = len(dataloader.dataset)  # 検証データの総数
+    iterations   = dataloader.__len__()  # イテレーション数
 
-def test(model, criterion, dataloader: DataLoader) -> Tuple[float, float]:
+    total_correct = 0 # エポックにおける、各イテレーションの正解数の合計
+    total_loss    = 0 # エポックにおける、各イテレーションの損失の合計
+
+    with torch.no_grad():
+        for X, y in dataloader:
+            X, y = X.to(device), y.to(device)
+
+            pred = model(X)
+            loss = criterion(pred, y)
+
+            # 現在のイテレーションにおける、バッチ内の総正解数（最大：バッチサイズ）
+            num_correct = (pred.argmax(1) == y).type(torch.float).sum().item()
+
+            total_correct += num_correct
+            total_loss    += loss.item()
+    
+    avg_acc  = total_correct / num_val_data  # 本エポックにおけるAccuracy
+    avg_loss = total_loss / iterations  # 本エポックにおける損失
+    return avg_acc, avg_loss
+
+def test(model, criterion, dataloader: DataLoader, device: str = "cuda") -> Tuple[float, float]:
     """
     テスト用関数。全エポック終了後に配置する。`validation()`を流用
     """
+    avg_acc, avg_loss = validation(model, criterion, dataloader, device)
+    return avg_acc, avg_loss
 
 
-def save_lc_of_loss(train_loss_list: list, val_loss_list: list, date_now: str) -> None:
+def make_dir_4_deliverables() -> str:
+    """
+    成果物保存用のディレクトリを作成する。ディレクトリ名は日付+時間。\n
+    返り値として、作成したディレクトリパスを返す。
+    """
+    if not(platform.system() == "Windows"):
+        date_now = datetime.now().isoformat(timespec="second")
+    else:
+        date_now = datetime.now().strftime("%Y%m%dT%H-%M-%S")
+    
+    os.makedirs(f"results/{date_now}/")
+    return f"./results/{date_now}"
+
+
+def save_lc_of_loss(train_loss_list: list, val_loss_list: list, dir_path: str) -> None:
     """
     損失の学習曲線を保存する。学習時と検証時とを同時に描画する。
     """
+    epochs = len(train_loss_list)
+
+    fig, ax = plt.subplots(figsize=(16, 9), dpi=120)
+
+    ax.set_xlabel("Epochs")
+    ax.set_ylabel("Loss")
+    ax.set_title("Learning Curve (Loss)")
+
+    ax.plot(train_loss_list, label="Train loss")
+    ax.plot(val_loss_list, label="Validation loss")
+
+    ax.set_xticks(np.concatenate([np.array([0]), np.arange(4, epochs, 5)]))
+    ax.set_xticklabels(np.concatenate([np.array([1]), np.arange(5, epochs+1, 5)], dtype="unicode"))
+
+    ax.set_ylim(0)
+
+    ax.grid()
+    ax.legend()
+    fig.tight_layout()
+
+    plt.savefig(f"{dir_path}/LC_loss_{dir_path.replace('./results/', '')}.png")
 
 
-def save_lc_of_acc(train_loss_list: list, val_loss_list: list, date_now: str) -> None:
+def save_lc_of_acc(train_acc_list: list, val_acc_list: list, dir_path: str) -> None:
     """
-    精度の学習曲線を保存する。学習時と検証時とを同時に描画する。
+    Accuracyの学習曲線を保存する。学習時と検証時とを同時に描画する。
     """
+    epochs = len(train_acc_list)
+
+    fig, ax = plt.subplots(figsize=(16, 9), dpi=120)
+
+    ax.set_xlabel("Epochs")
+    ax.set_ylabel("Accuracy")
+    ax.set_title("Learning Curve (Accuracy)")
+
+    ax.plot(train_acc_list, label="Train accuracy")
+    ax.plot(val_acc_list, label="Validation accuracy")
+
+    ax.set_xticks(np.concatenate([np.array([0]), np.arange(4, epochs, 5)]))
+    ax.set_xticklabels(np.concatenate([np.array([1]), np.arange(5, epochs+1, 5)], dtype="unicode"))
+
+    ax.set_ylim(0)
+
+    ax.grid()
+    ax.legend()
+    fig.tight_layout()
+
+    plt.savefig(f"{dir_path}/LC_acc_{dir_path.replace('./results/', '')}.png")
 
 
 if __name__ == "__main__":
@@ -278,19 +364,43 @@ if __name__ == "__main__":
     #######################################
     #          ファインチューニング          #
     #######################################
+    # 以下のリストの要素数はエポック数となる
+    train_acc_list  = []
+    train_loss_list = []
+    val_acc_list  = []
+    val_loss_list = []
+
     print("\033[44mTraining Step\033[0m")
     train(pretrained_model, criterion, optimizer, train_dataloader)
 
     for t in range(epochs):
+        time_start = time.perf_counter()  # エポック内の処理時間の計測
+
         print(f"Epoch {t+1}\n----------------------------------------------------------------")
 
         print("\033[34mTrain\033[0m")
+        train_acc, train_loss = train(pretrained_model, criterion, optimizer, train_dataloader, device)
+        train_acc_list.append(train_acc)
+        train_loss_list.append(train_loss)
 
         print("\033[34mValidation\033[0m")
-        break
+        val_acc, val_loss = validation(pretrained_model, criterion, val_dataloader, device)
+        print(f"    Avg val loss: {val_loss:>5.4f}, Avg val acc: {val_acc:>5.4f}")
+        val_acc_list.append(val_acc)
+        val_loss_list.append(val_loss)
+
+        time_end = time.perf_counter()
+        elapsed_per_epoch = time_end - time_start
+
+        print(f"\033[34mStats of Train in Epoch {t+1}\033[0m\n  Avg loss: {train_loss:>5.4f}, Avg acc: {train_acc:>5.4f} (Duration: {elapsed_per_epoch:.2f}s)\n")
+
     print("\033[44mTest Step\033[0m")
+    test_acc, test_loss = test(pretrained_model, criterion, test_dataloader, device)
+    print(f"    Avg test loss: {test_loss:>5.4f}, Avg test acc: {test_acc:>5.4f}")
 
     
     ################################
     #          成果物の保存          #
     ################################
+    # 学習結果保存用のディレクトリを作成
+    dir_path = make_dir_4_deliverables()  # ./results/[something]
