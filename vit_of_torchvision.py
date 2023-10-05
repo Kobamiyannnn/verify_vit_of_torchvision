@@ -1,14 +1,11 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 from torch.utils.data import random_split, DataLoader
-from torchvision import datasets, transforms
+from torchvision import datasets
 import torchvision.models.vision_transformer as vit
 from timm.scheduler import CosineLRScheduler
 import matplotlib.pyplot as plt
 from torchinfo import summary
-import matplotlib.pyplot as plt
-
 from typing import Tuple, Never
 
 
@@ -114,10 +111,44 @@ def confirm_scheduler(scheduler: CosineLRScheduler, show_fig: bool = True) -> No
     plt.show()
 
 
-def train(model, criterion, optimizer, dataloader: DataLoader) -> Tuple[float, float]:
+def train(model, criterion, optimizer, dataloader: DataLoader, device: str) -> Tuple[float, float]:
     """
     学習用関数。1エポック間の学習について記述する。
     """
+    model.train()  # 学習モードに移行
+
+    num_train_data = len(dataloader.dataset)  # 学習データの総数
+    iterations     = dataloader.__len__()  # イテレーション数
+    batch_size     = len(X)  # バッチサイズ
+
+    total_correct = 0 # エポックにおける、各イテレーションの正解数の合計
+    total_loss    = 0 # エポックにおける、各イテレーションの損失の合計
+
+    for iteration, (X, y) in enumerate(dataloader):
+        X, y = X.to(device), y.to(device)
+
+        pred = model(X)
+        loss = criterion(pred, y)
+
+        # 現在のイテレーションにおける、バッチ内の総正解数（最大：バッチサイズ）
+        num_correct = (pred.argmax(1) == y).type(torch.float).sum().item()
+
+        total_correct += num_correct
+        total_loss    += loss.item()
+
+        optimizer.zero_grad()  # モデルの全パラメータの勾配を初期化
+        loss.backward()  # 誤差逆伝搬
+        optimizer.step()  # パラメータの更新
+
+        # 学習状況の表示
+        if (iteration % batch_size == 0) or (iteration+1 == iterations):
+            acc_in_this_iteration = num_correct / batch_size
+            print(f"    [{iteration+1:3d}/{iterations:3d} iterations] Loss: {loss.item():>5.4f} - Accuracy: {acc_in_this_iteration:>5.4f}")
+    
+
+    avg_acc  = total_correct / num_train_data  # 本エポックにおけるAccuracy
+    avg_loss = total_loss / iterations
+    return avg_acc, avg_loss 
 
 
 def validation(model, criterion, dataloader: DataLoader) -> Tuple[float, float]:
@@ -248,6 +279,7 @@ if __name__ == "__main__":
     #          ファインチューニング          #
     #######################################
     print("\033[44mTraining Step\033[0m")
+    train(pretrained_model, criterion, optimizer, train_dataloader)
 
     for t in range(epochs):
         print(f"Epoch {t+1}\n----------------------------------------------------------------")
@@ -255,7 +287,7 @@ if __name__ == "__main__":
         print("\033[34mTrain\033[0m")
 
         print("\033[34mValidation\033[0m")
-
+        break
     print("\033[44mTest Step\033[0m")
 
     
