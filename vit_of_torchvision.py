@@ -415,7 +415,6 @@ if __name__ == "__main__":
     val_loss_list = []
 
     print("\033[44mTraining Step\033[0m")
-    train(pretrained_model, criterion, optimizer, train_dataloader)
 
     for t in range(epochs):
         time_start = time.perf_counter()  # エポック内の処理時間の計測
