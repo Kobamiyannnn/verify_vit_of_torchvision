@@ -330,7 +330,8 @@ if __name__ == "__main__":
     pretrained_model = vit.vit_b_16(weights=vit.ViT_B_16_Weights.IMAGENET1K_V1).to(device)
 
     # 最終層の取り換え
-    pretrained_model.heads[0] = nn.Linear(in_features=768, out_features=10, bias=True)
+    # 取り替えたら.to(device)を忘れない
+    pretrained_model.heads[0] = nn.Linear(in_features=768, out_features=10, bias=True).to(device)
     nn.init.constant_(pretrained_model.heads[0].weight, 0)  # Zero-initialize
     nn.init.constant_(pretrained_model.heads[0].bias, 0) # Zero-initialize
 
