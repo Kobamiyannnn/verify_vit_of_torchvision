@@ -201,7 +201,7 @@ def make_dir_4_deliverables() -> str:
     返り値として、作成したディレクトリパスを返す。
     """
     if not(platform.system() == "Windows"):
-        date_now = datetime.now().isoformat(timespec="second")
+        date_now = datetime.now().isoformat(timespec="seconds")
     else:
         date_now = datetime.now().strftime("%Y%m%dT%H-%M-%S")
     
