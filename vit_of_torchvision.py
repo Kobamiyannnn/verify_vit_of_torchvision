@@ -118,7 +118,7 @@ def confirm_scheduler(scheduler: CosineLRScheduler, show_fig: bool = True) -> No
     plt.show()
 
 
-def train(model, criterion, optimizer, dataloader: DataLoader, device: str = "cuda") -> Tuple[float, float]:
+def train(model, criterion, optimizer, dataloader: DataLoader, device: str) -> Tuple[float, float]:
     """
     学習用関数。1エポック間の学習について記述する。
     """
@@ -158,7 +158,7 @@ def train(model, criterion, optimizer, dataloader: DataLoader, device: str = "cu
     return avg_acc, avg_loss 
 
 
-def validation(model, criterion, dataloader: DataLoader, device: str = "cuda") -> Tuple[float, float]:
+def validation(model, criterion, dataloader: DataLoader, device: str) -> Tuple[float, float]:
     """
     検証用関数。`train()`後に配置する
     """
@@ -187,7 +187,7 @@ def validation(model, criterion, dataloader: DataLoader, device: str = "cuda") -
     avg_loss = total_loss / iterations  # 本エポックにおける損失
     return avg_acc, avg_loss
 
-def test(model, criterion, dataloader: DataLoader, device: str = "cuda") -> Tuple[float, float]:
+def test(model, criterion, dataloader: DataLoader, device: str) -> Tuple[float, float]:
     """
     テスト用関数。全エポック終了後に配置する。`validation()`を流用
     """
@@ -338,10 +338,10 @@ if __name__ == "__main__":
     epochs = 10  # default: 300
     batch_size = 16  # NOTE: GTX 1650だとバッチサイズ16じゃないと載らない...
 
-    learning_rate = 0.001
+    learning_rate = 0.003
     weight_decay = 0
 
-    lr_warmup_epochs = 5
+    lr_warmup_epochs = 3
     lr_warmup_init   = 0.
 
     label_smoothing_epsilon = 0.11
@@ -436,7 +436,7 @@ if __name__ == "__main__":
         time_end = time.perf_counter()
         elapsed_per_epoch = time_end - time_start
 
-        print(f"\033[34mStats of Train in Epoch {t+1}\033[0m\n  Avg loss: {train_loss:>5.4f}, Avg acc: {train_acc:>5.4f} (Duration: {elapsed_per_epoch:.2f}s)\n", flush=True)
+        print(f"\033[34mStats of Train in Epoch {t+1}\033[0m\n    Avg loss: {train_loss:>5.4f}, Avg acc: {train_acc:>5.4f} (Duration: {elapsed_per_epoch:.2f}s)\n", flush=True)
 
     print("\033[44mTest Step\033[0m", flush=True)
     test_acc, test_loss = test(pretrained_model, criterion, test_dataloader, device)
