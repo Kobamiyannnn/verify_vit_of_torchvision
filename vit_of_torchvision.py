@@ -254,6 +254,8 @@ def save_lc_of_acc(train_acc_list: list, val_acc_list: list, dir_path: str) -> N
     ax.set_xticks(np.concatenate([np.array([0]), np.arange(4, epochs, 5)]))
     ax.set_xticklabels(np.concatenate([np.array([1]), np.arange(5, epochs+1, 5)], dtype="unicode"))
 
+    ax.set_yscale("log")
+
     ax.set_ylim(0)
 
     ax.grid()
@@ -305,6 +307,42 @@ def save_stats_2_csv(
     df_stats_in_test.to_csv(f"{dir_path}/stats_in_test_{dir_path.replace('./results/', '')}.csv", index=False, encoding="utf-8", quoting=csv.QUOTE_ALL)
 
 
+class EarlyStopping:
+    def __init__(self, dir_path: str, model_name: str, patience: int = 5):
+        """
+        `dir_path` (str): モデルの保存先ディレクトリ
+        `patience` (str): 訓練が停止するまでの残りエポック数
+        """
+        self.patience = patience  # 訓練が停止するまでの残りエポック数
+        self.counter = 0  # エポック数の現在のカウンター値
+        self.best_score = None  # 損失のベストスコア
+        self.early_stop = False  # Early stopping のフラグ
+        self.path = f"{dir_path}/{dir_path.replace('./results/', '')}_{model_name}.pth"  # モデル保存パス
+
+    def __call__(self, model, val_loss: float):
+        """
+        最小の損失が更新されたかの計算
+        """
+        score = val_loss
+
+        if self.best_score is None:
+            self.best_score = score
+            self.save_model(model)
+        elif score > self.best_score:
+            # ベストスコアを更新できなかった場合
+            self.counter += 1
+            if self.counter >= self.patience:
+                self.early_stop = True
+        else:
+            # ベストスコアを更新した場合
+            self.best_score = score  # ベストスコアの更新
+            self.save_model(model)
+            self.counter = 0
+
+    def save_model(self, model):
+        torch.save(model.state_dict(), self.path)
+
+
 if __name__ == "__main__":
     #-------------------------#
     #          諸準備          #
@@ -312,6 +350,8 @@ if __name__ == "__main__":
     device = set_device()  # デバイスの指定
     fix_seed(device=device)  # 乱数シードの固定
 
+    # 学習結果保存用のディレクトリを作成
+    dir_path = make_dir_4_deliverables()  # ./results/[something]
 
     #------------------------------#
     #          モデルの定義          #
@@ -327,7 +367,8 @@ if __name__ == "__main__":
         --lr-warmup-decay 0.033 --amp --label-smoothing 0.11 --mixup-alpha 0.2 --auto-augment ra\
         --clip-grad-norm 1 --ra-sampler --cutmix-alpha 1.0 --model-ema
     """
-    pretrained_model = vit.vit_b_16(weights=vit.ViT_B_16_Weights.IMAGENET1K_V1).to(device)
+    pretrained_model = vit.vit_b_32(weights=vit.ViT_B_32_Weights.IMAGENET1K_V1).to(device)
+    model_name = vit.vit_b_32.__name__
 
     # 最終層の取り換え
     # 取り替えたら.to(device)を忘れない
@@ -335,14 +376,14 @@ if __name__ == "__main__":
     nn.init.constant_(pretrained_model.heads[0].weight, 0)  # Zero-initialize
     nn.init.constant_(pretrained_model.heads[0].bias, 0) # Zero-initialize
 
-    epochs = 10  # default: 300
-    batch_size = 16  # NOTE: GTX 1650だとバッチサイズ16じゃないと載らない...
+    epochs = 100  # default: 300
+    batch_size = 256  # NOTE: GTX 1650だとバッチサイズ16じゃないと載らない...
 
-    learning_rate = 0.003
-    weight_decay = 0
+    learning_rate = 0.001
+    weight_decay = 0.3
 
-    lr_warmup_epochs = 3
-    lr_warmup_init   = 0.
+    lr_warmup_epochs = 5
+    lr_warmup_init   = 5e-6
 
     label_smoothing_epsilon = 0.11
 
@@ -415,6 +456,8 @@ if __name__ == "__main__":
     val_acc_list  = []
     val_loss_list = []
 
+    earlystopping = EarlyStopping(dir_path, model_name, patience=3)
+
     print("\033[44mTraining Step\033[0m")
 
     for t in range(epochs):
@@ -446,8 +489,6 @@ if __name__ == "__main__":
     ################################
     #          成果物の保存          #
     ################################
-    # 学習結果保存用のディレクトリを作成
-    dir_path = make_dir_4_deliverables()  # ./results/[something]
     # 学習曲線の保存
     save_lc_of_acc(train_acc_list, val_acc_list, dir_path)
     save_lc_of_loss(train_loss_list, val_loss_list, dir_path)
