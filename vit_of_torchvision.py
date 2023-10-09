@@ -254,9 +254,9 @@ def save_lc_of_acc(train_acc_list: list, val_acc_list: list, dir_path: str) -> N
     ax.set_xticks(np.concatenate([np.array([0]), np.arange(4, epochs, 5)]))
     ax.set_xticklabels(np.concatenate([np.array([1]), np.arange(5, epochs+1, 5)], dtype="unicode"))
 
-    ax.set_yscale("log")
+    # ax.set_yscale("log")
 
-    ax.set_ylim(0)
+    ax.set_ylim(0.8)
 
     ax.grid()
     ax.legend()
