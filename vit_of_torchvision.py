@@ -376,8 +376,8 @@ if __name__ == "__main__":
     nn.init.constant_(pretrained_model.heads[0].weight, 0)  # Zero-initialize
     nn.init.constant_(pretrained_model.heads[0].bias, 0) # Zero-initialize
 
-    epochs = 100  # default: 300
-    batch_size = 256  # NOTE: GTX 1650だとバッチサイズ16じゃないと載らない...
+    epochs = 300  # default: 300
+    batch_size = 128  # NOTE: GTX 1650だとバッチサイズ16じゃないと載らない...
 
     learning_rate = 0.001
     weight_decay = 0.3
@@ -480,6 +480,10 @@ if __name__ == "__main__":
         elapsed_per_epoch = time_end - time_start
 
         print(f"\033[34mStats of Train in Epoch {t+1}\033[0m\n    Avg loss: {train_loss:>5.4f}, Avg acc: {train_acc:>5.4f} (Duration: {elapsed_per_epoch:.2f}s)\n", flush=True)
+
+        earlystopping(pretrained_model, val_loss)
+        if earlystopping.early_stop:
+            print(f"\nEarly Stopping (Saved model path: {earlystopping.path})")
 
     print("\033[44mTest Step\033[0m", flush=True)
     test_acc, test_loss = test(pretrained_model, criterion, test_dataloader, device)
