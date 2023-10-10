@@ -413,7 +413,7 @@ if __name__ == "__main__":
     #          データセットの用意         #
     #----------------------------------#
     # 入力画像の前処理情報、preprocess(img)でいい
-    preprocess = vit.ViT_B_16_Weights.IMAGENET1K_V1.transforms()
+    preprocess = vit.ViT_B_32_Weights.IMAGENET1K_V1.transforms()
 
     train_data = datasets.CIFAR10(root="./data", train=True, download=True, transform=preprocess)
     test_data  = datasets.CIFAR10(root="./data", train=False, download=True, transform=preprocess)
