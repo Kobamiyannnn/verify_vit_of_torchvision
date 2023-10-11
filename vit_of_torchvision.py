@@ -254,9 +254,7 @@ def save_lc_of_acc(train_acc_list: list, val_acc_list: list, dir_path: str) -> N
     ax.set_xticks(np.concatenate([np.array([0]), np.arange(4, epochs, 5)]))
     ax.set_xticklabels(np.concatenate([np.array([1]), np.arange(5, epochs+1, 5)], dtype="unicode"))
 
-    # ax.set_yscale("log")
-
-    ax.set_ylim(0.8)
+    ax.set_yscale("log")
 
     ax.grid()
     ax.legend()
@@ -484,6 +482,7 @@ if __name__ == "__main__":
         earlystopping(pretrained_model, val_loss)
         if earlystopping.early_stop:
             print(f"\nEarly Stopping (Saved model path: {earlystopping.path})")
+            break
 
     print("\033[44mTest Step\033[0m", flush=True)
     test_acc, test_loss = test(pretrained_model, criterion, test_dataloader, device)
