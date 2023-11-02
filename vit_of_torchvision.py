@@ -22,9 +22,11 @@ def set_device() -> str:
     """
     # デバイスの指定
     device = (
-        "cuda" 
-        if torch.cuda.is_available() else "mps"
-        if torch.backends.mps.is_available() else "cpu"
+        "cuda"
+        if torch.cuda.is_available()
+        else "mps"
+        if torch.backends.mps.is_available()
+        else "cpu"
     )
     print(f"Using {device} device\n")
     return device
@@ -56,6 +58,7 @@ def get_img_info(dataloader: DataLoader) -> Tuple[int, int] | Never:
     """
     データローダーの形状を表示する。返り値としてチャンネル数と画像サイズを返す。
     """
+
     class NotSquareImgError(Exception):
         def __str__(self):
             return f"{NotSquareImgError.__name__}: Image height and width don't match!"
@@ -84,11 +87,11 @@ def show_dataset_sample(data: datasets, classes: dict, show_fig: bool = True) ->
     """
     学習データの表示。9個のサンプルを表示する。
     """
-    if not(show_fig):
+    if not (show_fig):
         return
     plt.figure(figsize=(8, 8))
     for i in range(9):
-        ax = plt.subplot(3, 3, i+1)
+        ax = plt.subplot(3, 3, i + 1)
         image, label = data[i]
         img = image.permute(1, 2, 0)  # 軸の入れ替え (C,H,W) -> (H,W,C)
         plt.imshow(img)
@@ -103,7 +106,7 @@ def confirm_scheduler(scheduler: CosineLRScheduler, show_fig: bool = True) -> No
     """
     スケジューラによる学習率の変化の確認用
     """
-    if not(show_fig):
+    if not (show_fig):
         return
     lrs = []
     for i in range(scheduler.t_initial):
@@ -118,17 +121,19 @@ def confirm_scheduler(scheduler: CosineLRScheduler, show_fig: bool = True) -> No
     plt.show()
 
 
-def train(model, criterion, optimizer, dataloader: DataLoader, device: str) -> Tuple[float, float]:
+def train(
+    model, criterion, optimizer, dataloader: DataLoader, device: str
+) -> Tuple[float, float]:
     """
     学習用関数。1エポック間の学習について記述する。
     """
     model.train()  # 学習モードに移行
 
     num_train_data = len(dataloader.dataset)  # 学習データの総数
-    iterations     = dataloader.__len__()  # イテレーション数
+    iterations = dataloader.__len__()  # イテレーション数
 
-    total_correct = 0 # エポックにおける、各イテレーションの正解数の合計
-    total_loss    = 0 # エポックにおける、各イテレーションの損失の合計
+    total_correct = 0  # エポックにおける、各イテレーションの正解数の合計
+    total_loss = 0  # エポックにおける、各イテレーションの損失の合計
 
     for iteration, (X, y) in enumerate(dataloader):
         X, y = X.to(device), y.to(device)
@@ -141,21 +146,23 @@ def train(model, criterion, optimizer, dataloader: DataLoader, device: str) -> T
         num_correct = (pred.argmax(1) == y).type(torch.float).sum().item()
 
         total_correct += num_correct
-        total_loss    += loss.item()
+        total_loss += loss.item()
 
         optimizer.zero_grad()  # モデルの全パラメータの勾配を初期化
         loss.backward()  # 誤差逆伝搬
         optimizer.step()  # パラメータの更新
 
         # 学習状況の表示
-        if (iteration % batch_size == 0) or (iteration+1 == iterations):
+        if (iteration % batch_size == 0) or (iteration + 1 == iterations):
             acc_in_this_iteration = num_correct / batch_size
-            print(f"    [{iteration+1:3d}/{iterations:3d} iterations] Loss: {loss.item():>5.4f} - Accuracy: {acc_in_this_iteration:>5.4f}")
-    
+            print(
+                f"\t[{iteration+1:3d}/{iterations:3d} iterations] "
+                + f"Loss: {loss.item():>5.4f} - Accuracy: {acc_in_this_iteration:>5.4f}"
+            )
 
-    avg_acc  = total_correct / num_train_data  # 本エポックにおけるAccuracy
+    avg_acc = total_correct / num_train_data  # 本エポックにおけるAccuracy
     avg_loss = total_loss / iterations  # 本エポックにおける損失
-    return avg_acc, avg_loss 
+    return avg_acc, avg_loss
 
 
 def validation(model, criterion, dataloader: DataLoader, device: str) -> Tuple[float, float]:
@@ -165,10 +172,10 @@ def validation(model, criterion, dataloader: DataLoader, device: str) -> Tuple[f
     model.eval()  # 検証モードに移行
 
     num_val_data = len(dataloader.dataset)  # 検証データの総数
-    iterations   = dataloader.__len__()  # イテレーション数
+    iterations = dataloader.__len__()  # イテレーション数
 
-    total_correct = 0 # エポックにおける、各イテレーションの正解数の合計
-    total_loss    = 0 # エポックにおける、各イテレーションの損失の合計
+    total_correct = 0  # エポックにおける、各イテレーションの正解数の合計
+    total_loss = 0  # エポックにおける、各イテレーションの損失の合計
 
     with torch.no_grad():
         for X, y in dataloader:
@@ -181,11 +188,12 @@ def validation(model, criterion, dataloader: DataLoader, device: str) -> Tuple[f
             num_correct = (pred.argmax(1) == y).type(torch.float).sum().item()
 
             total_correct += num_correct
-            total_loss    += loss.item()
-    
-    avg_acc  = total_correct / num_val_data  # 本エポックにおけるAccuracy
+            total_loss += loss.item()
+
+    avg_acc = total_correct / num_val_data  # 本エポックにおけるAccuracy
     avg_loss = total_loss / iterations  # 本エポックにおける損失
     return avg_acc, avg_loss
+
 
 def test(model, criterion, dataloader: DataLoader, device: str) -> Tuple[float, float]:
     """
@@ -200,11 +208,11 @@ def make_dir_4_deliverables() -> str:
     成果物保存用のディレクトリを作成する。ディレクトリ名は日付+時間。\n
     返り値として、作成したディレクトリパスを返す。
     """
-    if not(platform.system() == "Windows"):
+    if not (platform.system() == "Windows"):
         date_now = datetime.now().isoformat(timespec="seconds")
     else:
         date_now = datetime.now().strftime("%Y%m%dT%H-%M-%S")
-    
+
     os.makedirs(f"results/{date_now}/")
     return f"./results/{date_now}"
 
@@ -225,7 +233,9 @@ def save_lc_of_loss(train_loss_list: list, val_loss_list: list, dir_path: str) -
     ax.plot(val_loss_list, label="Validation loss")
 
     ax.set_xticks(np.concatenate([np.array([0]), np.arange(4, epochs, 5)]))
-    ax.set_xticklabels(np.concatenate([np.array([1]), np.arange(5, epochs+1, 5)], dtype="unicode"))
+    ax.set_xticklabels(
+        np.concatenate([np.array([1]), np.arange(5, epochs + 1, 5)], dtype="unicode")
+    )
 
     ax.set_ylim(0)
 
@@ -252,7 +262,9 @@ def save_lc_of_acc(train_acc_list: list, val_acc_list: list, dir_path: str) -> N
     ax.plot(val_acc_list, label="Validation accuracy")
 
     ax.set_xticks(np.concatenate([np.array([0]), np.arange(4, epochs, 5)]))
-    ax.set_xticklabels(np.concatenate([np.array([1]), np.arange(5, epochs+1, 5)], dtype="unicode"))
+    ax.set_xticklabels(
+        np.concatenate([np.array([1]), np.arange(5, epochs + 1, 5)], dtype="unicode")
+    )
 
     ax.set_yscale("log")
 
@@ -264,45 +276,48 @@ def save_lc_of_acc(train_acc_list: list, val_acc_list: list, dir_path: str) -> N
 
 
 def save_stats_2_csv(
-        train_acc_list: list,
-        val_acc_list: list, 
-        train_loss_list: list, 
-        val_loss_list: list,
-        test_acc: float, 
-        test_loss: float, 
-        dir_path: str
-    ) -> None:
+    train_acc_list: list,
+    val_acc_list: list,
+    train_loss_list: list,
+    val_loss_list: list,
+    test_acc: float,
+    test_loss: float,
+    dir_path: str,
+) -> None:
     """
     各エポックのAccuracy、Loss、また、テストでのAccuracy、Lossを保存する。
     """
     index = ["epoch_" + str(i + 1) for i in range(len(train_acc_list))]
 
     df_acc_in_learn = pd.DataFrame(
-        {
-            "train_acc": train_acc_list,
-            "val_acc": val_acc_list
-        },
-        index=index
+        {"train_acc": train_acc_list, "val_acc": val_acc_list}, index=index
     )
     df_loss_in_learn = pd.DataFrame(
-        {
-            "train_loss": train_loss_list,
-            "val_loss": val_loss_list
-        },
-        index=index
+        {"train_loss": train_loss_list, "val_loss": val_loss_list}, index=index
     )
     df_stats_in_test = pd.DataFrame(
-        {
-            "accuracy": [test_acc],
-            "loss": [test_loss]
-        },
-        index=["test"]
+        {"accuracy": [test_acc], "loss": [test_loss]}, index=["test"]
     )
 
     # CSVとして書き出し
-    df_acc_in_learn.to_csv(f"{dir_path}/acc_in_learn_{dir_path.replace('./results/', '')}.csv", index=False, encoding="utf-8", quoting=csv.QUOTE_ALL)
-    df_loss_in_learn.to_csv(f"{dir_path}/loss_in_learn_{dir_path.replace('./results/', '')}.csv", index=False, encoding="utf-8", quoting=csv.QUOTE_ALL)
-    df_stats_in_test.to_csv(f"{dir_path}/stats_in_test_{dir_path.replace('./results/', '')}.csv", index=False, encoding="utf-8", quoting=csv.QUOTE_ALL)
+    df_acc_in_learn.to_csv(
+        f"{dir_path}/acc_in_learn_{dir_path.replace('./results/', '')}.csv",
+        index=False,
+        encoding="utf-8",
+        quoting=csv.QUOTE_ALL,
+    )
+    df_loss_in_learn.to_csv(
+        f"{dir_path}/loss_in_learn_{dir_path.replace('./results/', '')}.csv",
+        index=False,
+        encoding="utf-8",
+        quoting=csv.QUOTE_ALL,
+    )
+    df_stats_in_test.to_csv(
+        f"{dir_path}/stats_in_test_{dir_path.replace('./results/', '')}.csv",
+        index=False,
+        encoding="utf-8",
+        quoting=csv.QUOTE_ALL,
+    )
 
 
 class EarlyStopping:
@@ -315,7 +330,10 @@ class EarlyStopping:
         self.counter = 0  # エポック数の現在のカウンター値
         self.best_score = None  # 損失のベストスコア
         self.early_stop = False  # Early stopping のフラグ
-        self.path = f"{dir_path}/{dir_path.replace('./results/', '')}_{model_name}.pth"  # モデル保存パス
+        # モデル保存パス
+        self.path = (
+            f"{dir_path}/{dir_path.replace('./results/', '')}_{model_name}.pth"
+        )
 
     def __call__(self, model, val_loss: float):
         """
@@ -342,46 +360,48 @@ class EarlyStopping:
 
 
 if __name__ == "__main__":
-    #-------------------------#
+    # -------------------------#
     #          諸準備          #
-    #-------------------------#
+    # -------------------------#
     device = set_device()  # デバイスの指定
     fix_seed(device=device)  # 乱数シードの固定
 
     # 学習結果保存用のディレクトリを作成
     dir_path = make_dir_4_deliverables()  # ./results/[something]
 
-    #------------------------------#
+    # ------------------------------#
     #          モデルの定義          #
-    #------------------------------#
+    # ------------------------------#
     # /Users/[user_name]/.cache/torch/hub/checkpoints/ に保存される
     """
     # vit_b_16のrecipe
     [Link](https://github.com/pytorch/vision/tree/main/references/classification#vit_b_16)
 
-    torchrun --nproc_per_node=8 train.py\
-        --model vit_b_16 --epochs 300 --batch-size 512 --opt adamw --lr 0.003 --wd 0.3\
-        --lr-scheduler cosineannealinglr --lr-warmup-method linear --lr-warmup-epochs 30\
-        --lr-warmup-decay 0.033 --amp --label-smoothing 0.11 --mixup-alpha 0.2 --auto-augment ra\
-        --clip-grad-norm 1 --ra-sampler --cutmix-alpha 1.0 --model-ema
+    torchrun --nproc_per_node=8 train.py
+        --model vit_b_16 --epochs 300 --batch-size 512 --opt adamw --lr 0.003 --wd 0.3
+        --lr-scheduler cosineannealinglr --lr-warmup-method linear --lr-warmup-epochs 30
+        --lr-warmup-decay 0.033 --amp --label-smoothing 0.11 --mixup-alpha 0.2
+        --auto-augment ra --clip-grad-norm 1 --ra-sampler --cutmix-alpha 1.0 --model-ema
     """
     pretrained_model = vit.vit_b_32(weights=vit.ViT_B_32_Weights.IMAGENET1K_V1).to(device)
     model_name = vit.vit_b_32.__name__
 
     # 最終層の取り換え
     # 取り替えたら.to(device)を忘れない
-    pretrained_model.heads[0] = nn.Linear(in_features=768, out_features=10, bias=True).to(device)
+    pretrained_model.heads[0] = nn.Linear(in_features=768, out_features=10, bias=True).to(
+        device
+    )
     nn.init.constant_(pretrained_model.heads[0].weight, 0)  # Zero-initialize
-    nn.init.constant_(pretrained_model.heads[0].bias, 0) # Zero-initialize
+    nn.init.constant_(pretrained_model.heads[0].bias, 0)  # Zero-initialize
 
     epochs = 300  # default: 300
-    batch_size = 128  # NOTE: GTX 1650だとバッチサイズ16じゃないと載らない...
+    batch_size = 256  # NOTE: GTX 1650だとバッチサイズ16じゃないと載らない...
 
     learning_rate = 0.001
     weight_decay = 0.3
 
     lr_warmup_epochs = 5
-    lr_warmup_init   = 5e-6
+    lr_warmup_init = 5e-6
 
     label_smoothing_epsilon = 0.11
 
@@ -390,41 +410,47 @@ if __name__ == "__main__":
     print()
 
     optimizer = torch.optim.SGD(
-        params=pretrained_model.parameters(), 
-        lr=learning_rate, 
+        params=pretrained_model.parameters(),
+        lr=learning_rate,
         weight_decay=weight_decay,
-        momentum=0.9
+        momentum=0.9,
     )
     scheduler = CosineLRScheduler(
         optimizer,
         t_initial=epochs,  # The initial number of epochs.
         warmup_t=lr_warmup_epochs,  # The number of warmup epochs.
-        warmup_lr_init=lr_warmup_init, 
-        warmup_prefix=True, # If set to `True`, then every new epoch number equals `epoch = epoch - warmup_t`.
+        warmup_lr_init=lr_warmup_init,
+        # If set to `True`, then every new epoch number equals `epoch -= warmup_t`.
+        warmup_prefix=True,
     )
 
-    criterion = nn.CrossEntropyLoss(label_smoothing=label_smoothing_epsilon)  # Label Smoothingありの損失関数
+    criterion = nn.CrossEntropyLoss(
+        label_smoothing=label_smoothing_epsilon
+    )  # Label Smoothingありの損失関数
     confirm_scheduler(scheduler, show_fig=False)
 
-
-    #----------------------------------#
+    # ----------------------------------#
     #          データセットの用意         #
-    #----------------------------------#
+    # ----------------------------------#
     # 入力画像の前処理情報、preprocess(img)でいい
     preprocess = vit.ViT_B_32_Weights.IMAGENET1K_V1.transforms()
 
-    train_data = datasets.CIFAR10(root="./data", train=True, download=True, transform=preprocess)
-    test_data  = datasets.CIFAR10(root="./data", train=False, download=True, transform=preprocess)
+    train_data = datasets.CIFAR10(
+        root="./data", train=True, download=True, transform=preprocess
+    )
+    test_data = datasets.CIFAR10(
+        root="./data", train=False, download=True, transform=preprocess
+    )
     # データセットの分割
     # train:val:test = 8:1:1
-    num_val  = int(len(test_data) * 0.5)
+    num_val = int(len(test_data) * 0.5)
     num_test = len(test_data) - num_val
     val_data, test_data = random_split(test_data, [num_val, num_test])
-    
+
     # データローダーの作成
     train_dataloader = DataLoader(train_data, batch_size=batch_size, shuffle=True)
-    val_dataloader   = DataLoader(val_data, batch_size=batch_size, shuffle=False)
-    test_dataloader  = DataLoader(test_data, batch_size=batch_size, shuffle=False)
+    val_dataloader = DataLoader(val_data, batch_size=batch_size, shuffle=False)
+    test_dataloader = DataLoader(test_data, batch_size=batch_size, shuffle=False)
 
     confirm_dataset(train_data, val_data, test_data)
     channels, img_size = get_img_info(train_dataloader)
@@ -440,18 +466,17 @@ if __name__ == "__main__":
         6: "frog",
         7: "horse",
         8: "ship",
-        9: "truck"
+        9: "truck",
     }
     show_dataset_sample(train_data, classes, show_fig=False)
-
 
     #######################################
     #          ファインチューニング          #
     #######################################
     # 以下のリストの要素数はエポック数となる
-    train_acc_list  = []
+    train_acc_list = []
     train_loss_list = []
-    val_acc_list  = []
+    val_acc_list = []
     val_loss_list = []
 
     earlystopping = EarlyStopping(dir_path, model_name, patience=3)
@@ -461,23 +486,33 @@ if __name__ == "__main__":
     for t in range(epochs):
         time_start = time.perf_counter()  # エポック内の処理時間の計測
 
-        print(f"Epoch {t+1}\n----------------------------------------------------------------", flush=True)
+        print(
+            f"Epoch {t+1}\n----------------------------------------------------------------",
+            flush=True,
+        )
 
         print("\033[34mTrain\033[0m", flush=True)
-        train_acc, train_loss = train(pretrained_model, criterion, optimizer, train_dataloader, device)
+        train_acc, train_loss = train(
+            pretrained_model, criterion, optimizer, train_dataloader, device
+        )
         train_acc_list.append(train_acc)
         train_loss_list.append(train_loss)
 
         print("\033[34mValidation\033[0m", flush=True)
         val_acc, val_loss = validation(pretrained_model, criterion, val_dataloader, device)
-        print(f"    Avg val loss: {val_loss:>5.4f}, Avg val acc: {val_acc:>5.4f}")
+        print(f"\tAvg val loss: {val_loss:>5.4f}, Avg val acc: {val_acc:>5.4f}")
         val_acc_list.append(val_acc)
         val_loss_list.append(val_loss)
 
         time_end = time.perf_counter()
         elapsed_per_epoch = time_end - time_start
 
-        print(f"\033[34mStats of Train in Epoch {t+1}\033[0m\n    Avg loss: {train_loss:>5.4f}, Avg acc: {train_acc:>5.4f} (Duration: {elapsed_per_epoch:.2f}s)\n", flush=True)
+        print(
+            f"\033[34mStats of Train in Epoch {t+1}\033[0m\n"
+            + f"\tAvg loss: {train_loss:>5.4f}, "
+            + f"Avg acc: {train_acc:>5.4f} (Duration: {elapsed_per_epoch:.2f}s)\n",
+            flush=True,
+        )
 
         earlystopping(pretrained_model, val_loss)
         if earlystopping.early_stop:
@@ -486,13 +521,22 @@ if __name__ == "__main__":
 
     print("\033[44mTest Step\033[0m", flush=True)
     test_acc, test_loss = test(pretrained_model, criterion, test_dataloader, device)
-    print(f"    Avg test loss: {test_loss:>5.4f}, Avg test acc: {test_acc:>5.4f}", flush=True)
+    print(
+        f"    Avg test loss: {test_loss:>5.4f}, Avg test acc: {test_acc:>5.4f}", flush=True
+    )
 
-    
     ################################
     #          成果物の保存          #
     ################################
     # 学習曲線の保存
     save_lc_of_acc(train_acc_list, val_acc_list, dir_path)
     save_lc_of_loss(train_loss_list, val_loss_list, dir_path)
-    save_stats_2_csv(train_acc_list, val_acc_list, train_loss_list, val_loss_list, test_acc, test_loss, dir_path)
+    save_stats_2_csv(
+        train_acc_list,
+        val_acc_list,
+        train_loss_list,
+        val_loss_list,
+        test_acc,
+        test_loss,
+        dir_path,
+    )
